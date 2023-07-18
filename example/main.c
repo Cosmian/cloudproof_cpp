@@ -32,6 +32,7 @@ int main() {
     memcpy(policy, buffer, buffer_size);
     policy_size = buffer_size;
 
+    // Add axis Security Level
     buffer_size = MAX_BUFFER_SIZE;
     if (h_add_policy_axis(buffer, &buffer_size, policy, policy_size, policy_axis_sec) != 0) {
         fprintf(stderr, "Error adding policy axis.\n");
@@ -40,6 +41,7 @@ int main() {
     memcpy(policy, buffer, buffer_size);
     policy_size = buffer_size;
 
+    // Add axis Department
     buffer_size = MAX_BUFFER_SIZE;
     if (h_add_policy_axis(buffer, &buffer_size, policy, policy_size, policy_axis_dep) != 0) {
         fprintf(stderr, "Error adding policy axis.\n");
