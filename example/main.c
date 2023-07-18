@@ -18,74 +18,116 @@ int main() {
                              "{ \"name\": \"HR\", \"encryption_hint\": \"Classic\" }"
                              "], \"hierarchical\": false }";
 
-    char my_policy[MAX_BUFFER_SIZE];
-    int my_policy_size = 0;
+    char policy[MAX_BUFFER_SIZE];
+    int policy_size = 0;
 
     char buffer[MAX_BUFFER_SIZE];
     int buffer_size = MAX_BUFFER_SIZE;
 
-    int ret = h_policy(buffer, &buffer_size, 100);
-    memcpy(my_policy, buffer, buffer_size);
-    my_policy_size = buffer_size;
-    printf("%d, %d\n", ret, my_policy_size);
+    if (h_policy(buffer, &buffer_size, 100) != 0) {
+        fprintf(stderr, "Error creating policy.\n");
+        exit(1);
+    }
+
+    memcpy(policy, buffer, buffer_size);
+    policy_size = buffer_size;
 
     buffer_size = MAX_BUFFER_SIZE;
-    ret = h_add_policy_axis(buffer, &buffer_size, my_policy, my_policy_size, policy_axis_sec);
-    memcpy(my_policy, buffer, buffer_size);
-    my_policy_size = buffer_size;
-    printf("%d, %d\n", ret, my_policy_size);
+    if (h_add_policy_axis(buffer, &buffer_size, policy, policy_size, policy_axis_sec) != 0) {
+        fprintf(stderr, "Error adding policy axis.\n");
+        exit(1);
+    }
+    memcpy(policy, buffer, buffer_size);
+    policy_size = buffer_size;
 
     buffer_size = MAX_BUFFER_SIZE;
-    ret = h_add_policy_axis(buffer, &buffer_size, my_policy, my_policy_size, policy_axis_dep);
-    memcpy(my_policy, buffer, buffer_size);
-    my_policy_size = buffer_size;
-    printf("%d, %d\n", ret, my_policy_size);
+    if (h_add_policy_axis(buffer, &buffer_size, policy, policy_size, policy_axis_dep) != 0) {
+        fprintf(stderr, "Error adding policy axis.\n");
+        exit(1);
+    }
+    memcpy(policy, buffer, buffer_size);
+    policy_size = buffer_size;
 
     /*  Create Master Keys  */
-    char masterPrivateKey[MAX_BUFFER_SIZE];
-    int masterPrivateKeySize = MAX_BUFFER_SIZE;
-    char masterPublicKey[MAX_BUFFER_SIZE];
-    int masterPublicKeySize = MAX_BUFFER_SIZE;
+    char master_private_key[MAX_BUFFER_SIZE];
+    int master_private_key_size = MAX_BUFFER_SIZE;
+    char public_key[MAX_BUFFER_SIZE];
+    int public_key_size = MAX_BUFFER_SIZE;
 
-    ret = h_generate_master_keys(masterPrivateKey, &masterPrivateKeySize, masterPublicKey,
-                                 &masterPublicKeySize, my_policy, my_policy_size);
+    int ret_code = h_generate_master_keys(master_private_key, &master_private_key_size, public_key,
+                                          &public_key_size, policy, policy_size);
 
-    printf("%d, %d, %d\n", ret, masterPrivateKeySize, masterPublicKeySize);
+    if (ret_code != 0) {
+        // Retry with correct allocated size
+        char master_private_key[master_private_key_size];
+        char public_key[public_key_size];
+        if (h_generate_master_keys(master_private_key, &master_private_key_size, public_key,
+                                   &public_key_size, policy, policy_size) != 0) {
+            fprintf(stderr, "Error creating master keys.\n");
+            exit(1);
+        }
+    }
 
     /*  Encrypt Message  */
     char plaintext[] = "Hello world";
     char encryption_policy[] = "Department::FIN && Security Level::Protected";
-    char ciphertext[MAX_BUFFER_SIZE];
-    int ciphertext_size = MAX_BUFFER_SIZE;
     char header_metadata[] = {};
     char authentication_data[] = {};
+    int ciphertext_size = MAX_BUFFER_SIZE + sizeof(header_metadata) + sizeof(plaintext) +
+                          2 * h_symmetric_encryption_overhead();
+    char ciphertext[ciphertext_size];
 
-    ret = h_hybrid_encrypt(ciphertext, &ciphertext_size, my_policy, my_policy_size, masterPublicKey,
-                           masterPublicKeySize, encryption_policy, plaintext, sizeof(plaintext),
-                           header_metadata, 0, authentication_data, 0);
-
-    printf("Enc Message: %d, %d, %d\n", ret, sizeof(plaintext), ciphertext_size);
+    if (h_hybrid_encrypt(ciphertext, &ciphertext_size, policy, policy_size, public_key,
+                         public_key_size, encryption_policy, plaintext, sizeof(plaintext),
+                         header_metadata, sizeof(header_metadata), authentication_data,
+                         sizeof(authentication_data)) != 0) {
+        fprintf(stderr, "Error encrypting message.\n");
+        exit(1);
+    }
 
     /*  Create User Key  */
     char user_policy[] = "Department::FIN && Security Level::Protected";
     char user_private_key[MAX_BUFFER_SIZE];
     int user_private_key_size = MAX_BUFFER_SIZE;
 
-    ret = h_generate_user_secret_key(user_private_key, &user_private_key_size, masterPrivateKey,
-                                     masterPrivateKeySize, user_policy, my_policy, my_policy_size);
+    ret_code =
+        h_generate_user_secret_key(user_private_key, &user_private_key_size, master_private_key,
+                                   master_private_key_size, user_policy, policy, policy_size);
 
-    printf("User Key: %d, %d\n", ret, user_private_key_size);
+    if (ret_code != 0) {
+        // Retry with the correct allocated size
+        char user_private_key[user_private_key_size];
+        if (h_generate_user_secret_key(user_private_key, &user_private_key_size, master_private_key,
+                                       master_private_key_size, user_policy, policy,
+                                       policy_size) != 0) {
+            fprintf(stderr, "Error creating user key.\n");
+            exit(1);
+        }
+    }
 
     /*  Decrypt Message  */
-    char *plaintext_out = (char *)malloc(ciphertext_size);
+    char *plaintext_out =
+        (char *)malloc(ciphertext_size); // plaintext should be smaller than cipher text
     int plaintext_size = ciphertext_size;
     char header_buffer[MAX_BUFFER_SIZE];
     int header_size = MAX_BUFFER_SIZE;
-    h_hybrid_decrypt(plaintext_out, &plaintext_size, header_buffer, &header_size, ciphertext,
-                     ciphertext_size, authentication_data, 0, user_private_key,
-                     user_private_key_size);
 
-    printf("Dec Message: %d, %d, %s\n", ret, plaintext_size, plaintext_out);
+    ret_code = h_hybrid_decrypt(
+        plaintext_out, &plaintext_size, header_buffer, &header_size, ciphertext, ciphertext_size,
+        authentication_data, sizeof(authentication_data), user_private_key, user_private_key_size);
+    if (ret_code != 0) {
+        // retry with correct allocation size for the header metadata
+        char header_buffer[header_size];
+        if (h_hybrid_decrypt(plaintext_out, &plaintext_size, header_buffer, &header_size,
+                             ciphertext, ciphertext_size, authentication_data,
+                             sizeof(authentication_data), user_private_key,
+                             user_private_key_size) != 0) {
+            fprintf(stderr, "Error decrypting message.\n");
+            exit(1);
+        }
+    }
+
+    printf("Decrypted Message: %s\n", plaintext_out);
 
     free(plaintext_out);
 
