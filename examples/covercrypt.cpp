@@ -171,10 +171,12 @@ int main() {
     if (h_hybrid_decrypt(plaintext_out2.data(), &plaintext_size, header_buffer.data(), &header_size,
                          topsecret_mkg_ciphertext.data(), topsecret_mkg_ciphertext.size(),
                          authentication_data.data(), authentication_data.size(),
-                         user_private_key.data(), user_private_key.size()) != 0) {
-        std::cerr << "Error decrypting top secret marketing message." << std::endl;
+                         user_private_key.data(), user_private_key.size()) == 0) {
+        std::cerr << "We should not be able to decrypt top secret marketing message." << std::endl;
         exit(1);
     }
+
+    std::cout << "As expected, we can't decrypt a top secret marketing message." << std::endl;
 
     return 0;
 }

@@ -157,11 +157,11 @@ int main() {
     if (h_hybrid_decrypt(plaintext_out, &plaintext_size, header_buffer, &header_size,
                          topsecret_mkg_ciphertext, topsecret_mkg_ciphertext_size,
                          authentication_data, sizeof(authentication_data), user_private_key,
-                         user_private_key_size) != 0) {
-        fprintf(stderr, "Error decrypting top secret marketing message.\n");
+                         user_private_key_size) == 0) {
+        fprintf(stderr, "We should not be able to decrypt top secret marketing message.\n");
         exit(1);
     }
-
+    printf("As expected, we can't decrypt a top secret marketing message.\n");
     free(plaintext_out);
 
     return 0;
