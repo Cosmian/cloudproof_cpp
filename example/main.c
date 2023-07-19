@@ -70,25 +70,47 @@ int main() {
         }
     }
 
-    /*  Encrypt Message  */
-    char plaintext[] = "Hello world";
-    char encryption_policy[] = "Department::FIN && Security Level::Protected";
-    char header_metadata[] = {};
-    char authentication_data[] = {};
-    int ciphertext_size = MAX_BUFFER_SIZE + sizeof(header_metadata) + sizeof(plaintext) +
-                          2 * h_symmetric_encryption_overhead();
-    char ciphertext[ciphertext_size];
+    /*  Encrypt Messages  */
+    // Empty metadata and authentication data
+    char header_metadata[0];
+    char authentication_data[0];
 
-    if (h_hybrid_encrypt(ciphertext, &ciphertext_size, policy, policy_size, public_key,
-                         public_key_size, encryption_policy, plaintext, sizeof(plaintext),
-                         header_metadata, sizeof(header_metadata), authentication_data,
+    // Protected marketing message
+    char protected_mkg_data[] = "protected_mkg_message";
+    char protected_mkg_policy[] = "Department::MKG && Security Level::Protected";
+    int protected_mkg_ciphertext_size = MAX_BUFFER_SIZE + sizeof(header_metadata) +
+                                        sizeof(protected_mkg_data) +
+                                        2 * h_symmetric_encryption_overhead();
+    char protected_mkg_ciphertext[protected_mkg_ciphertext_size];
+
+    if (h_hybrid_encrypt(protected_mkg_ciphertext, &protected_mkg_ciphertext_size, policy,
+                         policy_size, public_key, public_key_size, protected_mkg_policy,
+                         protected_mkg_data, sizeof(protected_mkg_data), header_metadata,
+                         sizeof(header_metadata), authentication_data,
+                         sizeof(authentication_data)) != 0) {
+        fprintf(stderr, "Error encrypting message.\n");
+        exit(1);
+    }
+
+    // Top secret marketing message
+    char topsecret_mkg_data[] = "top_secret_mkg_message";
+    char topsecret_mkg_policy[] = "Department::MKG && Security Level::Top Secret";
+    int topsecret_mkg_ciphertext_size = MAX_BUFFER_SIZE + sizeof(header_metadata) +
+                                        sizeof(topsecret_mkg_data) +
+                                        2 * h_symmetric_encryption_overhead();
+    char topsecret_mkg_ciphertext[topsecret_mkg_ciphertext_size];
+
+    if (h_hybrid_encrypt(topsecret_mkg_ciphertext, &topsecret_mkg_ciphertext_size, policy,
+                         policy_size, public_key, public_key_size, topsecret_mkg_policy,
+                         topsecret_mkg_data, sizeof(topsecret_mkg_data), header_metadata,
+                         sizeof(header_metadata), authentication_data,
                          sizeof(authentication_data)) != 0) {
         fprintf(stderr, "Error encrypting message.\n");
         exit(1);
     }
 
     /*  Create User Key  */
-    char user_policy[] = "Department::FIN && Security Level::Protected";
+    char user_policy[] = "Department::MKG && Security Level::Confidential";
     char user_private_key[MAX_BUFFER_SIZE];
     int user_private_key_size = MAX_BUFFER_SIZE;
 
@@ -107,29 +129,38 @@ int main() {
         }
     }
 
-    /*  Decrypt Message  */
-    char *plaintext_out =
-        (char *)malloc(ciphertext_size); // plaintext should be smaller than cipher text
-    int plaintext_size = ciphertext_size;
-    char header_buffer[MAX_BUFFER_SIZE];
-    int header_size = MAX_BUFFER_SIZE;
+    /*  Decrypt Messages  */
+    // No header metadata in our ciphertext
+    char header_buffer[0];
+    int header_size = 0;
 
-    ret_code = h_hybrid_decrypt(
-        plaintext_out, &plaintext_size, header_buffer, &header_size, ciphertext, ciphertext_size,
-        authentication_data, sizeof(authentication_data), user_private_key, user_private_key_size);
-    if (ret_code != 0) {
-        // retry with correct allocation size for the header metadata
-        char header_buffer[header_size];
-        if (h_hybrid_decrypt(plaintext_out, &plaintext_size, header_buffer, &header_size,
-                             ciphertext, ciphertext_size, authentication_data,
-                             sizeof(authentication_data), user_private_key,
-                             user_private_key_size) != 0) {
-            fprintf(stderr, "Error decrypting message.\n");
-            exit(1);
-        }
+    // Our user key can decrypt the protected marketing message
+    int plaintext_size =
+        protected_mkg_ciphertext_size; // plaintext should be smaller than ciphertext
+    char *plaintext_out = (char *)malloc(plaintext_size);
+
+    if (h_hybrid_decrypt(plaintext_out, &plaintext_size, header_buffer, &header_size,
+                         protected_mkg_ciphertext, protected_mkg_ciphertext_size,
+                         authentication_data, sizeof(authentication_data), user_private_key,
+                         user_private_key_size) != 0) {
+        fprintf(stderr, "Error decrypting protected marketing message.\n");
+        exit(1);
     }
 
-    printf("Decrypted Message: %s\n", plaintext_out);
+    printf("Successfully decrypted protected marketing message: '%s'.\n", plaintext_out);
+    free(plaintext_out);
+
+    // But we can't decrypt the top secret marketing message
+    plaintext_size = topsecret_mkg_ciphertext_size;
+    plaintext_out = (char *)malloc(plaintext_size);
+
+    if (h_hybrid_decrypt(plaintext_out, &plaintext_size, header_buffer, &header_size,
+                         topsecret_mkg_ciphertext, topsecret_mkg_ciphertext_size,
+                         authentication_data, sizeof(authentication_data), user_private_key,
+                         user_private_key_size) != 0) {
+        fprintf(stderr, "Error decrypting top secret marketing message.\n");
+        exit(1);
+    }
 
     free(plaintext_out);
 
