@@ -11,22 +11,41 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get install -y gcc g++
     - name: Compile C file
-      run: gcc examples/covercrypt.c -Wall -Wextra -Werror -o covercrypt_c -I include/ -L lib/ -lcloudproof
+      run: gcc examples/covercrypt.c -Wall -Wextra -Wpedantic -Werror -o covercrypt_c -I include/ -L lib/ -lcloudproof
     - name: Compile C++ file
-      run: g++ examples/covercrypt.cpp -Wall -Wextra -Werror -o covercrypt_cpp -I include/ -L lib/ -lcloudproof
+      run: g++ examples/covercrypt.cpp -Wall -Wextra -Wpedantic -Werror -o covercrypt_cpp -I include/ -L lib/ -lcloudproof
     - name: Run C file example
       run: LD_LIBRARY_PATH=lib ./covercrypt_c
     - name: Run C++ file example
       run: LD_LIBRARY_PATH=lib ./covercrypt_cpp
+
   macos-test:
     runs-on: macos-12
     steps:
     - uses: actions/checkout@v3
     - name: Compile C file
-      run: gcc examples/covercrypt.c -Wall -Wextra -Werror -o covercrypt_c -I include/ -L lib/ -lcloudproof
+      run: gcc examples/covercrypt.c -Wall -Wextra -Wpedantic -Werror -o covercrypt_c -I include/ -L lib/ -lcloudproof
     - name: Compile C++ file
-      run: g++ examples/covercrypt.cpp -Wall -Wextra -Werror -o covercrypt_cpp -I include/ -L lib/ -lcloudproof
+      run: g++ examples/covercrypt.cpp -Wall -Wextra -Wpedantic -Werror -o covercrypt_cpp -I include/ -L lib/ -lcloudproof
     - name: Run C file example
       run: DYLD_FALLBACK_LIBRARY_PATH=lib ./covercrypt_c
     - name: Run C++ file example
       run: DYLD_FALLBACK_LIBRARY_PATH=lib ./covercrypt_cpp
+
+  windows-test:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Visual Studio Build Tools
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Extract LIB from DLL
+      run: |
+        dumpbin /exports "lib/cloudproof.dll" > "lib/cloudproof.def"
+        lib /def:"lib/cloudproof.def" /out:"lib/cloudproof.lib"
+
+    - name: Compile C file
+      run: cl "examples/covercrypt.c" /I "include" /link "lib/cloudproof.lib" /OUT:covercrypt_c.exe
+
+    - name: Run C file example
+      run: covercrypt_c.exe

@@ -72,8 +72,8 @@ int main() {
 
     /*  Encrypt Messages  */
     // Empty metadata and authentication data
-    int8_t header_metadata[0];
-    int8_t authentication_data[0];
+    int8_t *header_metadata = NULL;
+    int8_t *authentication_data = NULL;
 
     // Protected marketing message
     int8_t protected_mkg_data[] = "protected_mkg_message";
@@ -81,13 +81,12 @@ int main() {
     int protected_mkg_ciphertext_size = MAX_BUFFER_SIZE + sizeof(header_metadata) +
                                         sizeof(protected_mkg_data) +
                                         2 * h_symmetric_encryption_overhead();
-    int8_t protected_mkg_ciphertext[protected_mkg_ciphertext_size];
+    int8_t *protected_mkg_ciphertext = malloc(protected_mkg_ciphertext_size);
 
     if (h_hybrid_encrypt(protected_mkg_ciphertext, &protected_mkg_ciphertext_size, policy,
                          policy_size, public_key, public_key_size, protected_mkg_policy,
-                         protected_mkg_data, sizeof(protected_mkg_data), header_metadata,
-                         sizeof(header_metadata), authentication_data,
-                         sizeof(authentication_data)) != 0) {
+                         protected_mkg_data, sizeof(protected_mkg_data), header_metadata, 0,
+                         authentication_data, 0) != 0) {
         fprintf(stderr, "Error encrypting message.\n");
         exit(1);
     }
@@ -98,7 +97,7 @@ int main() {
     int topsecret_mkg_ciphertext_size = MAX_BUFFER_SIZE + sizeof(header_metadata) +
                                         sizeof(topsecret_mkg_data) +
                                         2 * h_symmetric_encryption_overhead();
-    int8_t topsecret_mkg_ciphertext[topsecret_mkg_ciphertext_size];
+    int8_t *topsecret_mkg_ciphertext = malloc(topsecret_mkg_ciphertext_size);
 
     if (h_hybrid_encrypt(topsecret_mkg_ciphertext, &topsecret_mkg_ciphertext_size, policy,
                          policy_size, public_key, public_key_size, topsecret_mkg_policy,
@@ -131,7 +130,7 @@ int main() {
 
     /*  Decrypt Messages  */
     // No header metadata in our ciphertext
-    int8_t header_buffer[0];
+    int8_t *header_buffer = NULL;
     int header_size = 0;
 
     // Our user key can decrypt the protected marketing message
@@ -163,6 +162,9 @@ int main() {
 
     free(plaintext_out);
     free(plaintext_out2);
+
+    free(protected_mkg_ciphertext);
+    free(topsecret_mkg_ciphertext);
 
     free(user_private_key);
     free(public_key);
