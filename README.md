@@ -30,6 +30,12 @@ securely be outsourced without compromising usability.
 
 ## Getting started
 
+To download the header files and libs run the following command:
+
+```bash
+./download_libs.sh
+```
+
 Code examples are available in [./examples](./examples) to get you started.
 
 Please [check the online documentation](https://docs.cosmian.com/cloudproof_encryption/use_cases_benefits/) for more details on using the CloudProof APIs.
