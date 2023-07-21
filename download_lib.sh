@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ux
 
-download_package() {
+extract_package() {
     wget "https://package.cosmian.com/cloudproof_rust/$1/all.zip" &&
     unzip -j -d lib/ all.zip \
         x86_64-unknown-linux-gnu/x86_64-unknown-linux-gnu/release/libcloudproof.so \
@@ -13,9 +13,9 @@ download_package() {
 }
 
 cd "$(dirname "$0")"
-download_package "v2.1.1"
+extract_package "v2.1.1"
 if [ $? -ne 0 ]; then
-    download_package "last_build/fix/binaries_archive"
+    extract_package "last_build/fix/binaries_archive"
 fi
 
 exit 0

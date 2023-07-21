@@ -30,7 +30,9 @@ securely be outsourced without compromising usability.
 
 ## Getting started
 
-To download the header files and libs run the following command:
+Download the prebuilt libs and header files for released version [here](https://github.com/Cosmian/cloudproof_cpp/releases).
+
+Alternatively, the latest header files and libs can be downloaded by running the following command:
 
 ```bash
 ./download_libs.sh

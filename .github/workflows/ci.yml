@@ -1,5 +1,5 @@
 ---
-name: Build and test
+name: Build, test and release
 
 on: [push]
 
@@ -18,6 +18,7 @@ jobs:
           lib/
           include/
         retention-days: 1
+
   linux-test:
     needs: download_libs
     runs-on: ubuntu-20.04
@@ -80,3 +81,20 @@ jobs:
       run: .\covercrypt_c.exe
     - name: Run C++ file example
       run: .\covercrypt_cpp.exe
+
+  release:
+    needs: download_libs
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: libs
+          path: .
+      - name: Create release package
+        run: zip -r cloudproof_${{ github.ref_name }}_library.zip include/ lib/
+      - name: Release on tags, attach asset on release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: cloudproof_${{ github.ref_name }}_library.zip
