@@ -9,6 +9,7 @@ Cloudproof Encryption secures data repositories and applications in the cloud wi
 - [Licensing](#licensing)
 - [Cryptographic primitives](#cryptographic-primitives)
 - [Getting started](#getting-started)
+- [Versions Correspondence](#versions-correspondence)
 
 <!-- tocstop -->
 
@@ -57,3 +58,13 @@ LD_LIBRARY_PATH=lib ./covercrypt_c
 g++ examples/covercrypt.cpp -o covercrypt_cpp -I include/ -L lib/ -lcloudproof
 LD_LIBRARY_PATH=lib ./covercrypt_cpp
 ```
+
+## Versions Correspondence
+
+This library depends on [CoverCrypt](https://github.com/Cosmian/cover_crypt) and [Findex](https://github.com/Cosmian/findex).
+
+This table shows the minimum version correspondence between the various components.
+
+| `cloudproof_cpp` | CoverCrypt | Findex      |
+| ---------------- | ---------- | ----------- |
+| 0.1.0            | 12.0.0     | 4.0.0       |
