@@ -15,7 +15,7 @@ extract_package() {
 cd "$(dirname "$0")"
 extract_package "v2.1.1"
 if [ $? -ne 0 ]; then
-    extract_package "last_build/fix/binaries_archive"
+    extract_package "last_build/release/v2.1.1"
 fi
 
 exit 0
