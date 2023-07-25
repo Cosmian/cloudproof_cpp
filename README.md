@@ -40,6 +40,7 @@ Alternatively, the latest header files and libs can be downloaded by running the
 ```
 
 Code examples are available in [./examples](./examples) to get you started.
+They have been tested with GCC/G++ 9.3.0 and Microsoft Visual Code 2019.
 
 Please [check the online documentation](https://docs.cosmian.com/cloudproof_encryption/use_cases_benefits/) for more details on using the CloudProof APIs.
 

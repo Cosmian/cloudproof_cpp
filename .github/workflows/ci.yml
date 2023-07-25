@@ -32,7 +32,8 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get install -y gcc g++
     - name: Compile C file
-      run: gcc examples/covercrypt.c -Wall -Wextra -Wpedantic -Werror -o covercrypt_c -I include/ -L lib/ -lcloudproof
+      run:
+        gcc examples/covercrypt.c -Wall -Wextra -Wpedantic -Werror -o covercrypt_c -I include/ -L lib/ -lcloudproof
     - name: Compile C++ file
       run: g++ examples/covercrypt.cpp -Wall -Wextra -Wpedantic -Werror -o covercrypt_cpp -I include/ -L lib/ -lcloudproof
     - name: Run C file example
@@ -61,7 +62,7 @@ jobs:
 
   windows-test:
     needs: download_libs
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
     - uses: actions/checkout@v3
     - name: Download artifact
