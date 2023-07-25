@@ -1,0 +1,101 @@
+---
+name: Build, test and release
+
+on: [push]
+
+jobs:
+  download_libs:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download libs and header file
+      run: |
+        ./download_lib.sh
+    - uses: actions/upload-artifact@v3
+      with:
+        name: libs
+        path: |
+          lib/
+          include/
+        retention-days: 1
+
+  linux-test:
+    needs: download_libs
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: libs
+        path: .
+    - name: Install dependencies
+      run: sudo apt-get install -y gcc g++
+    - name: Compile C file
+      run:
+        gcc examples/covercrypt.c -Wall -Wextra -Wpedantic -Werror -o covercrypt_c -I include/ -L lib/ -lcloudproof
+    - name: Compile C++ file
+      run: g++ examples/covercrypt.cpp -Wall -Wextra -Wpedantic -Werror -o covercrypt_cpp -I include/ -L lib/ -lcloudproof
+    - name: Run C file example
+      run: LD_LIBRARY_PATH=lib ./covercrypt_c
+    - name: Run C++ file example
+      run: LD_LIBRARY_PATH=lib ./covercrypt_cpp
+
+  macos-test:
+    needs: download_libs
+    runs-on: macos-12
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: libs
+        path: .
+    - name: Compile C file
+      run: gcc examples/covercrypt.c -Wall -Wextra -Wpedantic -Werror -o covercrypt_c -I include/ -L lib/ -lcloudproof
+    - name: Compile C++ file
+      run: g++ examples/covercrypt.cpp -Wall -Wextra -Wpedantic -Werror -o covercrypt_cpp -I include/ -L lib/ -lcloudproof
+    - name: Run C file example
+      run: DYLD_FALLBACK_LIBRARY_PATH=lib ./covercrypt_c
+    - name: Run C++ file example
+      run: DYLD_FALLBACK_LIBRARY_PATH=lib ./covercrypt_cpp
+
+  windows-test:
+    needs: download_libs
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: libs
+        path: .
+    - name: Install Visual Studio Build Tools
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: Compile C file
+      run: cl "examples/covercrypt.c" /I "include" /link "lib/libcloudproof.dll.a" /OUT:covercrypt_c.exe
+    - name: Compile C++ file
+      run: cl "examples/covercrypt.cpp" /EHsc /I "include" /link "lib/libcloudproof.dll.a" /OUT:covercrypt_cpp.exe
+    - name: Copy DLL to executable dir
+      run: copy lib/cloudproof.dll .
+    - name: Run C file example
+      run: .\covercrypt_c.exe
+    - name: Run C++ file example
+      run: .\covercrypt_cpp.exe
+
+  release:
+    needs: download_libs
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: libs
+          path: .
+      - name: Create release package
+        run: zip -r cloudproof_${{ github.ref_name }}_library.zip include/ lib/
+      - name: Release on tags, attach asset on release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: cloudproof_${{ github.ref_name }}_library.zip
