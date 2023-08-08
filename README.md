@@ -68,4 +68,5 @@ This table shows the minimum version correspondence between the various componen
 
 | `cloudproof_cpp` | Covercrypt | Findex      |
 | ---------------- | ---------- | ----------- |
+| 0.2.0            | 12.0.0     | 5.0.0       |
 | 0.1.0            | 12.0.0     | 4.0.0       |

@@ -13,9 +13,9 @@ extract_package() {
 }
 
 cd "$(dirname "$0")"
-extract_package "v2.1.1"
+extract_package "v2.2.0"
 if [ $? -ne 0 ]; then
-    extract_package "last_build/release/v2.1.1"
+    extract_package "last_build/feature/findex_5_0_0"
 fi
 
 exit 0
